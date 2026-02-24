@@ -1,8 +1,11 @@
 'use strict';
 
 /**
- * タブ移動処理（特権ページ・スキップ機能付き）：
- * 移動先が特権ページ（about: 等）だった場合、さらにその次を探して移動する。
+ * タブ移動処理（特権ページ・スキップ機能付き）
+ *
+ * 【バグ修正】activeTab.index はFirefoxのグローバルタブインデックスであり、
+ * ソート後の tabs[] 配列の添字（0, 1, 2...）とは別物。
+ * そのため配列上の位置（findIndex）を使って nextIndex を計算する。
  */
 async function shiftTab(direction) {
     try {
@@ -10,50 +13,44 @@ async function shiftTab(direction) {
         if (tabs.length <= 1) return;
 
         tabs.sort((a, b) => a.index - b.index);
-        const activeTab = tabs.find(t => t.active);
-        if (!activeTab) return;
 
-        let nextIndex = (activeTab.index + direction + tabs.length) % tabs.length;
+        // ✅ 修正: activeTab.index ではなく 配列上の添字（arrayPos）を使う
+        const arrayPos = tabs.findIndex(t => t.active);
+        if (arrayPos === -1) return;
 
-        // ── スキップ・ロジック開始 ──
-        let attempts = 0;
-        // 特権ページ、あるいは拡張機能の動作対象外URLを検知
-        while (attempts < tabs.length) {
-            const targetTab = tabs[nextIndex];
-            const url = targetTab.url;
+        let nextPos = (arrayPos + direction + tabs.length) % tabs.length;
 
-            // スキップ対象：about:, chrome:, addons.mozilla.org, moz-extension:
-            const isRestricted = url.startsWith('about:') ||
+        // ── 特権ページスキップ ──
+        for (let attempts = 0; attempts < tabs.length; attempts++) {
+            const targetTab = tabs[nextPos];
+            const url = targetTab.url || '';
+
+            const isRestricted =
+                url.startsWith('about:') ||
                 url.startsWith('chrome:') ||
                 url.startsWith('moz-extension:') ||
                 url.includes('addons.mozilla.org');
 
             if (!isRestricted) {
-                // 操作可能なページが見つかったら即移動
                 await browser.tabs.update(targetTab.id, { active: true });
                 return;
             }
 
-            // 特権ページだったので、さらに同じ方向にずらす
-            nextIndex = (nextIndex + direction + tabs.length) % tabs.length;
-            attempts++;
+            nextPos = (nextPos + direction + tabs.length) % tabs.length;
         }
-        // ── スキップ・ロジック終了 ──
-
+        // 全タブが特権ページの場合は何もしない
     } catch (e) {
-        console.error("ShiftTab Error:", e);
+        console.error('[FoxWalker] shiftTab error:', e);
     }
 }
 
 /**
- * メインリスナー：
- * 信号を受け取り、各コマンドを実行。省略なし。
+ * メインリスナー
  */
 browser.runtime.onMessage.addListener((message, sender) => {
-    const tabId = sender.tab.id;
-    const windowId = sender.tab.windowId;
+    // sender.tab は content script からのメッセージにのみ存在する
+    const tabId = sender.tab?.id;
 
-    // 非同期処理を確実に完遂させるための即時実行関数
     (async () => {
         try {
             switch (message.command) {
@@ -65,27 +62,30 @@ browser.runtime.onMessage.addListener((message, sender) => {
                     await shiftTab(-1);
                     break;
 
-                case 'CLOSE_TAB':
+                case 'CLOSE_TAB': {
                     await browser.tabs.remove(tabId);
                     break;
+                }
 
-                case 'RELOAD_TAB':
+                case 'RELOAD_TAB': {
                     await browser.tabs.reload(tabId);
                     break;
+                }
 
-                case 'UNDO_CLOSE':
+                case 'UNDO_CLOSE': {
+                    // sessions.restore() は引数なしで最後に閉じたタブを復元
                     await browser.sessions.restore();
                     break;
+                }
 
-                case 'MUTE_TAB':
+                case 'MUTE_TAB': {
                     const tab = await browser.tabs.get(tabId);
                     await browser.tabs.update(tabId, { muted: !tab.mutedInfo.muted });
                     break;
+                }
 
-                case 'DISCARD_TAB':
-                    /**
-                     * GG: 開いているタブおよびピン留めされているタブ「以外」すべてをDiscard
-                     */
+                case 'DISCARD_TAB': {
+                    // GG: アクティブ・ピン留め以外を全てDiscard（メモリ解放）
                     const tabsToDiscard = await browser.tabs.query({
                         currentWindow: true,
                         active: false,
@@ -96,19 +96,20 @@ browser.runtime.onMessage.addListener((message, sender) => {
                         await browser.tabs.discard(discardIds);
                     }
                     break;
+                }
 
-                case 'GO_FIRST_TAB':
+                case 'GO_FIRST_TAB': {
+                    // 99: index最小（最も左）のタブへ移動
                     const allTabs = await browser.tabs.query({ currentWindow: true });
-                    const first = allTabs.sort((a, b) => a.index - b.index)[0];
-                    if (first) {
-                        await browser.tabs.update(first.id, { active: true });
+                    allTabs.sort((a, b) => a.index - b.index);
+                    if (allTabs[0]) {
+                        await browser.tabs.update(allTabs[0].id, { active: true });
                     }
                     break;
+                }
 
-                case 'CLEAN_UP':
-                    /**
-                     * 00: 開いているタブおよびピン留めされているタブ「以外」すべてを閉じる
-                     */
+                case 'CLEAN_UP': {
+                    // 00: アクティブ・ピン留め以外を全て閉じる
                     const tabsToKill = await browser.tabs.query({
                         currentWindow: true,
                         active: false,
@@ -119,15 +120,17 @@ browser.runtime.onMessage.addListener((message, sender) => {
                         await browser.tabs.remove(targetIds);
                     }
                     break;
+                }
+
+
 
                 default:
-                    console.warn("Unknown command:", message.command);
+                    console.warn('[FoxWalker] Unknown command:', message.command);
             }
         } catch (err) {
-            console.error(`Execution error [${message.command}]:`, err);
+            console.error(`[FoxWalker] Error [${message.command}]:`, err);
         }
     })();
 
-    // 外部メッセージに対してtrueを返し、チャネルを維持
-    return true;
+    return true; // 非同期応答チャネルを維持
 });

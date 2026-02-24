@@ -125,6 +125,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 // ── Key handler (Integrated Double Tap) ──────────────────────────────────────
 window.addEventListener('keydown', (event) => {
     if (event.key === 'Alt' || event.key === 'Control' || event.key === 'Meta') return;
+    if (event.repeat) return; // キーリピートは全て無視
 
     if (event.key === 'Escape') {
         isWalkerMode = !isWalkerMode;
@@ -148,12 +149,20 @@ window.addEventListener('keydown', (event) => {
         lastKey = null; // Prevent triple-tap triggering
     }
 
-    // Command Table
+    // Command Table（ダブルタップ → background.jsのコマンドへ）
     const doubleActions = {
         'g': 'DISCARD_TAB', 'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE',
         '0': 'CLEAN_UP', '9': 'GO_FIRST_TAB', 'm': 'MUTE_TAB',
-        'l': 'FOCUS_URL', 'r': 'RELOAD_TAB'
+        'r': 'RELOAD_TAB'
     };
+
+    // LL: URLバーフォーカス（background経由不可のためkernel側でF6を送出）
+    if (isDoubleTap && key === 'l') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', keyCode: 117, bubbles: true }));
+        return;
+    }
 
     if (isDoubleTap && doubleActions[key]) {
         event.preventDefault();
