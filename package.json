@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^143.0.0",
+    "esbuild": "^0.27.3"
+  },
+  "scripts": {
+    "build": "esbuild src/*.ts --bundle --outdir=dist --target=firefox100 && copy manifest.json dist\\ && xcopy icons dist\\icons /E /I /Y",
+    "watch": "esbuild src/*.ts --bundle --outdir=dist --target=firefox100 --watch"
+  }
+}
