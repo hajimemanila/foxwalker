@@ -27,6 +27,8 @@
     }
   }
   async function init() {
+    const manifest = browser.runtime.getManifest();
+    document.getElementById("version-badge").textContent = `v${manifest.version}`;
     document.getElementById("mode-label").textContent = t("popup_mode_label");
     document.getElementById("sc-title").textContent = t("popup_sc_title");
     document.getElementById("footer").textContent = t("popup_footer_hint");

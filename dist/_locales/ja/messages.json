@@ -47,9 +47,6 @@
     "cs_tab_00": {
         "message": "アクティブ以外を全て閉じる"
     },
-    "cs_tab_ll": {
-        "message": "URLバーにフォーカス"
-    },
     "cs_sys_esc": {
         "message": "Walker Mode 切替"
     },

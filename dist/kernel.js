@@ -4,7 +4,22 @@
   var STORAGE_KEY = "isWalkerMode";
   var SCROLL_AMOUNT = 380;
   var DOUBLE_TAP_DELAY = 250;
-  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", " "]);
+  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " "]);
+  var DOUBLE_ACTIONS = {
+    "g": "DISCARD_TAB",
+    "x": "CLOSE_TAB",
+    "z": "UNDO_CLOSE",
+    "0": "CLEAN_UP",
+    "9": "GO_FIRST_TAB",
+    "m": "MUTE_TAB",
+    "r": "RELOAD_TAB"
+  };
+  var NAV_ACTIONS = {
+    "w": () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: "smooth" }),
+    "s": () => window.scrollBy({ top: SCROLL_AMOUNT, behavior: "smooth" }),
+    "a": () => browser.runtime.sendMessage({ command: "PREV_TAB" }),
+    "d": () => browser.runtime.sendMessage({ command: "NEXT_TAB" })
+  };
   var isWalkerMode = false;
   var lastKey = null;
   var lastKeyTime = 0;
@@ -58,7 +73,7 @@
       pointer-events: none; user-select: none;
     }
     #hud.visible { opacity: 1; transform: translateY(0) scale(1); }
-    .icon { font-size: 16px; line-height: 1; }
+    .icon { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; }
     .label { color: rgba(255, 255, 255, 0.55); text-transform: uppercase; font-size: 10px; letter-spacing: 0.12em; }
     .status { font-size: 12px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; transition: background 0.18s, color 0.18s; }
     .status.on  { background: rgba(255, 140, 0, 0.18); color: #ffac30; box-shadow: 0 0 10px rgba(255, 140, 0, 0.25); }
@@ -139,7 +154,7 @@
       border-radius: 16px;
       box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 140, 0, 0.10) inset;
       padding: 24px 28px;
-      min-width: 380px;   /* \u82F1\u8A9E\u306E\u9577\u3044\u6587\u5B57\u5217\u306B\u5BFE\u5FDC */
+      min-width: 380px;
       max-width: 480px;
       opacity: 0;
       transform: scale(0.94) translateY(10px);
@@ -153,13 +168,13 @@
       margin-bottom: 16px; padding-bottom: 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    #header .icon  { font-size: 18px; }
+    #header .icon  { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; }
     #header .title { font-size: 13px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); }
     #header .badge { margin-left: auto; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #ffac30; background: rgba(255, 140, 0, 0.15); border-radius: 999px; padding: 2px 8px; }
     table { width: 100%; border-collapse: collapse; }
     tr + tr td { border-top: 1px solid rgba(255, 255, 255, 0.05); }
     td { padding: 7px 4px; font-size: 12px; color: rgba(255, 255, 255, 0.55); vertical-align: middle; }
-    td.key-col { width: 110px; white-space: nowrap; } /* \u82F1\u8A9E\u30AD\u30FC\u30E9\u30D9\u30EB\u306B\u5BFE\u5FDC\u3057\u3066\u62E1\u5F35 */
+    td.key-col { width: 110px; white-space: nowrap; }
     .key {
       display: inline-block; font-size: 11px; font-weight: 700;
       font-family: 'Cascadia Code', 'Consolas', monospace;
@@ -220,10 +235,6 @@
       <tr>
         <td class="key-col"><span class="key">0</span><span class="key">0</span></td>
         <td class="desc">${t("cs_tab_00")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">L</span><span class="key">L</span></td>
-        <td class="desc">${t("cs_tab_ll")}</td>
       </tr>
 
       <tr><td class="section-label" colspan="2">${t("cs_section_sys")}</td></tr>
@@ -288,23 +299,9 @@
     } else {
       lastKey = null;
     }
-    const doubleActions = {
-      "g": "DISCARD_TAB",
-      "x": "CLOSE_TAB",
-      "z": "UNDO_CLOSE",
-      "0": "CLEAN_UP",
-      "9": "GO_FIRST_TAB",
-      "m": "MUTE_TAB",
-      "r": "RELOAD_TAB"
-    };
-    if (isDoubleTap && key === "l") {
+    if (isDoubleTap && DOUBLE_ACTIONS[key]) {
       event.preventDefault();
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "F6", keyCode: 117, bubbles: true }));
-      return;
-    }
-    if (isDoubleTap && doubleActions[key]) {
-      event.preventDefault();
-      browser.runtime.sendMessage({ command: doubleActions[key] });
+      browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
       return;
     }
     if (key === "f") {
@@ -312,16 +309,14 @@
       cheatsheet.toggle();
       return;
     }
-    const navActions = {
-      "w": () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: "smooth" }),
-      "s": () => window.scrollBy({ top: SCROLL_AMOUNT, behavior: "smooth" }),
-      "a": () => browser.runtime.sendMessage({ command: "PREV_TAB" }),
-      "d": () => browser.runtime.sendMessage({ command: "NEXT_TAB" }),
-      " ": () => browser.runtime.sendMessage({ command: shift ? "PREV_TAB" : "NEXT_TAB" })
-    };
-    if (navActions[key]) {
+    if (key === " ") {
       event.preventDefault();
-      navActions[key]();
+      browser.runtime.sendMessage({ command: shift ? "PREV_TAB" : "NEXT_TAB" });
+      return;
+    }
+    if (NAV_ACTIONS[key]) {
+      event.preventDefault();
+      NAV_ACTIONS[key]();
     }
   }
   window.addEventListener("keydown", (event) => {

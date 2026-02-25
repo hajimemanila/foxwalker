@@ -1,10 +1,22 @@
-'use strict';
-
 const STORAGE_KEY = 'isWalkerMode';
 const SCROLL_AMOUNT = 380;
 const DOUBLE_TAP_DELAY = 250;
 
-const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', ' ']);
+const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ']);
+
+// ── Module-level action maps ───────────────────────────────────────────────────
+const DOUBLE_ACTIONS: Record<string, string> = {
+    'g': 'DISCARD_TAB', 'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE',
+    '0': 'CLEAN_UP', '9': 'GO_FIRST_TAB', 'm': 'MUTE_TAB', 'r': 'RELOAD_TAB',
+};
+
+// Space は shift 依存なので module-level 化不可、残りを定数化
+const NAV_ACTIONS: Record<string, () => void> = {
+    'w': () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'smooth' }),
+    's': () => window.scrollBy({ top: SCROLL_AMOUNT, behavior: 'smooth' }),
+    'a': () => browser.runtime.sendMessage({ command: 'PREV_TAB' }),
+    'd': () => browser.runtime.sendMessage({ command: 'NEXT_TAB' }),
+};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let isWalkerMode = false;
@@ -14,7 +26,7 @@ let lastKeyTime = 0;
 // ── i18n helper ───────────────────────────────────────────────────────────────
 function t(key: string): string {
     const msg = browser.i18n.getMessage(key);
-    return msg || key; // キーが見つからない場合はキー文字列をフォールバック
+    return msg || key;
 }
 
 // ── Input guard ───────────────────────────────────────────────────────────────
@@ -67,7 +79,7 @@ const hud: HudController = (() => {
       pointer-events: none; user-select: none;
     }
     #hud.visible { opacity: 1; transform: translateY(0) scale(1); }
-    .icon { font-size: 16px; line-height: 1; }
+    .icon { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; }
     .label { color: rgba(255, 255, 255, 0.55); text-transform: uppercase; font-size: 10px; letter-spacing: 0.12em; }
     .status { font-size: 12px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; transition: background 0.18s, color 0.18s; }
     .status.on  { background: rgba(255, 140, 0, 0.18); color: #ffac30; box-shadow: 0 0 10px rgba(255, 140, 0, 0.25); }
@@ -82,7 +94,6 @@ const hud: HudController = (() => {
 
     const hudEl = document.createElement('div');
     hudEl.id = 'hud';
-    // i18n: HUDのラベル・ステータスを messages.json から取得
     const iconUrl = browser.runtime.getURL('icons/icon48.png');
     hudEl.innerHTML = `<img src="${iconUrl}" class="icon" alt="" /><span class="label">${t('hud_label')}</span><span class="status off">${t('hud_off')}</span>`;
 
@@ -164,7 +175,7 @@ const cheatsheet: CheatsheetController = (() => {
       border-radius: 16px;
       box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 140, 0, 0.10) inset;
       padding: 24px 28px;
-      min-width: 380px;   /* 英語の長い文字列に対応 */
+      min-width: 380px;
       max-width: 480px;
       opacity: 0;
       transform: scale(0.94) translateY(10px);
@@ -178,13 +189,13 @@ const cheatsheet: CheatsheetController = (() => {
       margin-bottom: 16px; padding-bottom: 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    #header .icon  { font-size: 18px; }
+    #header .icon  { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; }
     #header .title { font-size: 13px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); }
     #header .badge { margin-left: auto; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #ffac30; background: rgba(255, 140, 0, 0.15); border-radius: 999px; padding: 2px 8px; }
     table { width: 100%; border-collapse: collapse; }
     tr + tr td { border-top: 1px solid rgba(255, 255, 255, 0.05); }
     td { padding: 7px 4px; font-size: 12px; color: rgba(255, 255, 255, 0.55); vertical-align: middle; }
-    td.key-col { width: 110px; white-space: nowrap; } /* 英語キーラベルに対応して拡張 */
+    td.key-col { width: 110px; white-space: nowrap; }
     .key {
       display: inline-block; font-size: 11px; font-weight: 700;
       font-family: 'Cascadia Code', 'Consolas', monospace;
@@ -200,7 +211,6 @@ const cheatsheet: CheatsheetController = (() => {
     const overlay = document.createElement('div');
     overlay.id = 'overlay';
 
-    // i18n: チートシートの全文字列を messages.json から取得して構築
     const panel = document.createElement('div');
     panel.id = 'panel';
     panel.innerHTML = `
@@ -248,10 +258,6 @@ const cheatsheet: CheatsheetController = (() => {
       <tr>
         <td class="key-col"><span class="key">0</span><span class="key">0</span></td>
         <td class="desc">${t('cs_tab_00')}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">L</span><span class="key">L</span></td>
-        <td class="desc">${t('cs_tab_ll')}</td>
       </tr>
 
       <tr><td class="section-label" colspan="2">${t('cs_section_sys')}</td></tr>
@@ -312,7 +318,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     hud.setState(isWalkerMode);
 });
 
-// ── Key handler: 実際の機能分岐 ───────────────────────────────────────────────
+// ── Key handler ───────────────────────────────────────────────────────────────
 function handleKeyInput(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
     const shift = event.shiftKey;
@@ -326,21 +332,9 @@ function handleKeyInput(event: KeyboardEvent): void {
         lastKey = null;
     }
 
-    const doubleActions: Record<string, string> = {
-        'g': 'DISCARD_TAB', 'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE',
-        '0': 'CLEAN_UP', '9': 'GO_FIRST_TAB', 'm': 'MUTE_TAB',
-        'r': 'RELOAD_TAB'
-    };
-
-    if (isDoubleTap && key === 'l') {
+    if (isDoubleTap && DOUBLE_ACTIONS[key]) {
         event.preventDefault();
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', keyCode: 117, bubbles: true }));
-        return;
-    }
-
-    if (isDoubleTap && doubleActions[key]) {
-        event.preventDefault();
-        browser.runtime.sendMessage({ command: doubleActions[key] });
+        browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
         return;
     }
 
@@ -350,17 +344,15 @@ function handleKeyInput(event: KeyboardEvent): void {
         return;
     }
 
-    const navActions: Record<string, () => void> = {
-        'w': () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'smooth' }),
-        's': () => window.scrollBy({ top: SCROLL_AMOUNT, behavior: 'smooth' }),
-        'a': () => browser.runtime.sendMessage({ command: 'PREV_TAB' }),
-        'd': () => browser.runtime.sendMessage({ command: 'NEXT_TAB' }),
-        ' ': () => browser.runtime.sendMessage({ command: shift ? 'PREV_TAB' : 'NEXT_TAB' })
-    };
-
-    if (navActions[key]) {
+    if (key === ' ') {
         event.preventDefault();
-        navActions[key]();
+        browser.runtime.sendMessage({ command: shift ? 'PREV_TAB' : 'NEXT_TAB' });
+        return;
+    }
+
+    if (NAV_ACTIONS[key]) {
+        event.preventDefault();
+        NAV_ACTIONS[key]();
     }
 }
 

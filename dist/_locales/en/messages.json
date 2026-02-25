@@ -47,9 +47,6 @@
     "cs_tab_00": {
         "message": "Close All Other Tabs"
     },
-    "cs_tab_ll": {
-        "message": "Focus URL Bar"
-    },
     "cs_sys_esc": {
         "message": "Toggle Walker Mode"
     },

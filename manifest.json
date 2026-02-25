@@ -40,7 +40,7 @@
     ],
     "browser_specific_settings": {
         "gecko": {
-            "id": "fox-walker@local",
+            "id": "x-ops-walker@local",
             "strict_min_version": "109.0"
         }
     },

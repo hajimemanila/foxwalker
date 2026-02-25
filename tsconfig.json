@@ -2,7 +2,10 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -10,7 +13,13 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "moduleResolution": "node",
-    "types": ["@types/firefox-webext-browser"]
+    "types": [
+      "@types/firefox-webext-browser"
+    ],
+    "isolatedModules": true,
+    "moduleDetection": "force"
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }
