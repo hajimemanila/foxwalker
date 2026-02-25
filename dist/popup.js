@@ -33,7 +33,14 @@
     document.getElementById("sc-title").textContent = t("popup_sc_title");
     document.getElementById("footer").textContent = t("popup_footer_hint");
     const scHint = document.getElementById("sc-hint");
-    scHint.innerHTML = t("popup_sc_hint_before") + ' <span class="key-badge">F</span> ' + t("popup_sc_hint_after");
+    const beforeText = document.createTextNode(t("popup_sc_hint_before") + " ");
+    const keyBadge = document.createElement("span");
+    keyBadge.className = "key-badge";
+    keyBadge.textContent = "F";
+    const afterText = document.createTextNode(" " + t("popup_sc_hint_after"));
+    scHint.appendChild(beforeText);
+    scHint.appendChild(keyBadge);
+    scHint.appendChild(afterText);
     const result = await browser.storage.local.get(STORAGE_KEY);
     updateUI(!!result[STORAGE_KEY]);
     document.getElementById("toggle").addEventListener("click", async () => {

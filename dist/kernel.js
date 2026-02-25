@@ -87,8 +87,19 @@
   `;
     const hudEl = document.createElement("div");
     hudEl.id = "hud";
-    const iconUrl = browser.runtime.getURL("icons/icon48.png");
-    hudEl.innerHTML = `<img src="${iconUrl}" class="icon" alt="" /><span class="label">${t("hud_label")}</span><span class="status off">${t("hud_off")}</span>`;
+    const iconImg = document.createElement("img");
+    iconImg.src = browser.runtime.getURL("icons/icon48.png");
+    iconImg.className = "icon";
+    iconImg.alt = "";
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "label";
+    labelSpan.textContent = t("hud_label");
+    const statusSpan = document.createElement("span");
+    statusSpan.className = "status off";
+    statusSpan.textContent = t("hud_off");
+    hudEl.appendChild(iconImg);
+    hudEl.appendChild(labelSpan);
+    hudEl.appendChild(statusSpan);
     shadow.appendChild(style);
     shadow.appendChild(hudEl);
     const statusEl = hudEl.querySelector(".status");
@@ -190,65 +201,68 @@
     overlay.id = "overlay";
     const panel = document.createElement("div");
     panel.id = "panel";
-    panel.innerHTML = `
-    <div id="header">
-      <img src="${browser.runtime.getURL("icons/icon48.png")}" class="icon" alt="" />
-      <span class="title">X-Ops Walker</span>
-      <span class="badge">${t("cs_badge")}</span>
-    </div>
-    <table>
-      <tr><td class="section-label" colspan="2">${t("cs_section_nav")}</td></tr>
-      <tr>
-        <td class="key-col"><span class="key">A</span><span class="key">D</span></td>
-        <td class="desc">${t("cs_nav_ad")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">Space</span></td>
-        <td class="desc">${t("cs_nav_space")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">W</span><span class="key">S</span></td>
-        <td class="desc">${t("cs_nav_ws")}</td>
-      </tr>
-
-      <tr><td class="section-label" colspan="2">${t("cs_section_tab")}</td></tr>
-      <tr>
-        <td class="key-col"><span class="key">X</span><span class="key">X</span></td>
-        <td class="desc">${t("cs_tab_xx")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">Z</span><span class="key">Z</span></td>
-        <td class="desc">${t("cs_tab_zz")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">R</span><span class="key">R</span></td>
-        <td class="desc">${t("cs_tab_rr")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">M</span><span class="key">M</span></td>
-        <td class="desc">${t("cs_tab_mm")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">G</span><span class="key">G</span></td>
-        <td class="desc">${t("cs_tab_gg")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">0</span><span class="key">0</span></td>
-        <td class="desc">${t("cs_tab_00")}</td>
-      </tr>
-
-      <tr><td class="section-label" colspan="2">${t("cs_section_sys")}</td></tr>
-      <tr>
-        <td class="key-col"><span class="key">Esc</span></td>
-        <td class="desc">${t("cs_sys_esc")}</td>
-      </tr>
-      <tr>
-        <td class="key-col"><span class="key">F</span></td>
-        <td class="desc">${t("cs_sys_f")}</td>
-      </tr>
-    </table>
-    <div id="footer">${t("cs_footer")}</div>
-  `;
+    const header = document.createElement("div");
+    header.id = "header";
+    const hIcon = document.createElement("img");
+    hIcon.src = browser.runtime.getURL("icons/icon48.png");
+    hIcon.className = "icon";
+    hIcon.alt = "";
+    const hTitle = document.createElement("span");
+    hTitle.className = "title";
+    hTitle.textContent = "X-Ops Walker";
+    const hBadge = document.createElement("span");
+    hBadge.className = "badge";
+    hBadge.textContent = t("cs_badge");
+    header.appendChild(hIcon);
+    header.appendChild(hTitle);
+    header.appendChild(hBadge);
+    panel.appendChild(header);
+    const table = document.createElement("table");
+    function addSection(labelKey) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.className = "section-label";
+      td.colSpan = 2;
+      td.textContent = t(labelKey);
+      tr.appendChild(td);
+      table.appendChild(tr);
+    }
+    function addRow(keys, descKey) {
+      const tr = document.createElement("tr");
+      const keyTd = document.createElement("td");
+      keyTd.className = "key-col";
+      for (const k of keys) {
+        const span = document.createElement("span");
+        span.className = "key";
+        span.textContent = k;
+        keyTd.appendChild(span);
+      }
+      const descTd = document.createElement("td");
+      descTd.className = "desc";
+      descTd.textContent = t(descKey);
+      tr.appendChild(keyTd);
+      tr.appendChild(descTd);
+      table.appendChild(tr);
+    }
+    addSection("cs_section_nav");
+    addRow(["A", "D"], "cs_nav_ad");
+    addRow(["Space"], "cs_nav_space");
+    addRow(["W", "S"], "cs_nav_ws");
+    addSection("cs_section_tab");
+    addRow(["X", "X"], "cs_tab_xx");
+    addRow(["Z", "Z"], "cs_tab_zz");
+    addRow(["R", "R"], "cs_tab_rr");
+    addRow(["M", "M"], "cs_tab_mm");
+    addRow(["G", "G"], "cs_tab_gg");
+    addRow(["0", "0"], "cs_tab_00");
+    addSection("cs_section_sys");
+    addRow(["Esc"], "cs_sys_esc");
+    addRow(["F"], "cs_sys_f");
+    panel.appendChild(table);
+    const footer = document.createElement("div");
+    footer.id = "footer";
+    footer.textContent = t("cs_footer");
+    panel.appendChild(footer);
     overlay.appendChild(panel);
     shadow.appendChild(style);
     shadow.appendChild(overlay);
