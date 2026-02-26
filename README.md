@@ -1,6 +1,6 @@
 # X-Ops Walker (Browser Extension)
 
-**Fox Walker** is a high-precision, minimalist navigation tool designed to eliminate mouse dependency. It allows you to "walk through the web" with zero-latency keyboard control, built on a robust TypeScript architecture.
+**X-Ops Walker** is a high-precision, minimalist navigation tool designed to eliminate mouse dependency. It allows you to "walk through the web" with zero-latency keyboard control, built on a robust TypeScript architecture.
 
 Unlike standard extensions, Fox Walker features a smart bypass engine that prevents you from getting stuck on restricted pages like `about:addons` or `addons.mozilla.org`.
 
