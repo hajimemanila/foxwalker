@@ -1,17 +1,17 @@
 const STORAGE_KEY = 'isWalkerMode';
 const SCROLL_AMOUNT = 380;
-const DOUBLE_TAP_DELAY = 250;
 
 const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ', 'q', 'e', 'v', 'c']);
 
-const DOUBLE_ACTIONS: Record<string, string> = {
-    'g': 'DISCARD_TAB', 'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE',
-    '0': 'CLEAN_UP', '9': 'GO_FIRST_TAB', 'm': 'MUTE_TAB', 'r': 'RELOAD_TAB',
-    'c': 'DUPLICATE_TAB',
+// Shift+キー: background 送信アクション（旧: ダブルタップ）
+const SHIFT_ACTIONS: Record<string, string> = {
+    'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE', 'r': 'RELOAD_TAB',
+    'm': 'MUTE_TAB', 'g': 'DISCARD_TAB', '0': 'CLEAN_UP',
+    '9': 'GO_FIRST_TAB', 'c': 'DUPLICATE_TAB',
 };
 
-// ww / vv: background 送信不要のローカルスクロールアクション
-const DOUBLE_LOCAL_ACTIONS: Record<string, () => void> = {
+// Shift+W / Shift+V: ローカルスクロール（送信不要）
+const SHIFT_LOCAL_ACTIONS: Record<string, () => void> = {
     'w': () => window.scrollTo({ top: 0, behavior: 'smooth' }),
     'v': () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
 };
@@ -22,6 +22,7 @@ const NAV_ACTIONS: Record<string, () => void> = {
     'a': () => browser.runtime.sendMessage({ command: 'PREV_TAB' }),
     'd': () => browser.runtime.sendMessage({ command: 'NEXT_TAB' }),
 };
+
 
 // ── Google One Tap 迎撃CSS ──────────────────────────────────────────────────────
 // Google One Tap iframe によるフォーカス強奪を防ぎ、
@@ -50,8 +51,6 @@ function applyOneTapBlocker(enabled: boolean): void {
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let isWalkerMode = false;
-let lastKey: string | null = null;
-let lastKeyTime = 0;
 
 // ── i18n helper ───────────────────────────────────────────────────────────────
 function t(key: string): string {
@@ -346,15 +345,15 @@ const cheatsheet: CheatsheetController = (() => {
     addRow(['Q', 'E'], 'cs_nav_qe');
 
     addSection('cs_section_tab');
-    addRow(['X', 'X'], 'cs_tab_xx');
-    addRow(['Z', 'Z'], 'cs_tab_zz');
-    addRow(['R', 'R'], 'cs_tab_rr');
-    addRow(['M', 'M'], 'cs_tab_mm');
-    addRow(['G', 'G'], 'cs_tab_gg');
-    addRow(['0', '0'], 'cs_tab_00');
-    addRow(['W', 'W'], 'cs_tab_ww');
-    addRow(['V', 'V'], 'cs_tab_vv');
-    addRow(['C', 'C'], 'cs_tab_cc');
+    addRow(['Shift', 'X'], 'cs_tab_xx');
+    addRow(['Shift', 'Z'], 'cs_tab_zz');
+    addRow(['Shift', 'R'], 'cs_tab_rr');
+    addRow(['Shift', 'M'], 'cs_tab_mm');
+    addRow(['Shift', 'G'], 'cs_tab_gg');
+    addRow(['Shift', '0'], 'cs_tab_00');
+    addRow(['Shift', 'W'], 'cs_tab_ww');
+    addRow(['Shift', 'V'], 'cs_tab_vv');
+    addRow(['Shift', 'C'], 'cs_tab_cc');
 
     addSection('cs_section_sys');
     addRow(['Esc'], 'cs_sys_esc');
@@ -453,59 +452,66 @@ browser.runtime.onMessage.addListener((message: { command: string }) => {
     window.focus();
 });
 
+// ── normalizeKey: 修飾キーに依存しない物理キーの正規化 ────────────────────────
+// event.key は Shift押下時に記号文字に変化する（Shift+0→')'、Shift+9→'('等）。
+// event.code （キーボード配列/修飾キー非依存）で物理キー名を得る。
+function normalizeKey(event: KeyboardEvent): string {
+    const code = event.code;
+    if (code.startsWith('Key')) return code.slice(3).toLowerCase(); // KeyA → 'a'
+    if (code.startsWith('Digit')) return code.slice(5);               // Digit0 → '0'
+    if (code === 'Space') return ' ';
+    return event.key.toLowerCase(); // その他は event.key にフォールバック
+}
+
 // ── Key handler ───────────────────────────────────────────────────────────────
 function handleKeyInput(event: KeyboardEvent): void {
-    const key = event.key.toLowerCase();
+    const key = normalizeKey(event); // event.code ベースの正規化キー
     const shift = event.shiftKey;
-    const currentTime = Date.now();
-    const isDoubleTap = (key === lastKey && (currentTime - lastKeyTime) < DOUBLE_TAP_DELAY);
 
-    if (!isDoubleTap) {
-        lastKey = key;
-        lastKeyTime = currentTime;
-    } else {
-        lastKey = null;
-    }
-
-    // ダブルタップ: background 送信アクション (zz→UNDO_CLOSE, cc→DUPLICATE_TAB など)
-    if (isDoubleTap && DOUBLE_ACTIONS[key]) {
+    // Shift+キー: タブ操作（background 送信コマンド）
+    if (shift && SHIFT_ACTIONS[key]) {
         event.preventDefault();
-        browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
+        event.stopPropagation();
+        browser.runtime.sendMessage({ command: SHIFT_ACTIONS[key] });
         return;
     }
 
-    // ダブルタップ: ローカルスクロール (ww→最上部, vv→最下部)
-    if (isDoubleTap && DOUBLE_LOCAL_ACTIONS[key]) {
+    // Shift+W / Shift+V: ページ先頭・末尾へスクロール
+    if (shift && SHIFT_LOCAL_ACTIONS[key]) {
         event.preventDefault();
-        DOUBLE_LOCAL_ACTIONS[key]();
+        event.stopPropagation();
+        SHIFT_LOCAL_ACTIONS[key]();
         return;
     }
 
+    // F: チートシート開閉
     if (key === 'f') {
         event.preventDefault();
         cheatsheet.toggle();
         return;
     }
 
+    // Space: 次タブ / Shift+Space: 前タブ
     if (key === ' ') {
         event.preventDefault();
         browser.runtime.sendMessage({ command: shift ? 'PREV_TAB' : 'NEXT_TAB' });
         return;
     }
 
-    // シングルプレス: Q (履歴戻る), E (履歴進む)
+    // Q: 履歴戻る / E: 履歴進む
     if (key === 'q') { event.preventDefault(); window.history.back(); return; }
     if (key === 'e') { event.preventDefault(); window.history.forward(); return; }
 
-    // シングルプレス: Z (DOMリセット) — zz→UNDO_CLOSE は上の DOUBLE_ACTIONS で先処理済み
-    if (key === 'z' && !isDoubleTap) {
+    // Z (単押し): DOMリセット—Shift+Z は UNDO_CLOSE として上で先処理済み
+    if (key === 'z' && !shift) {
         event.preventDefault();
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
         window.focus();
         return;
     }
 
-    if (NAV_ACTIONS[key]) {
+    // W/S/A/D: スクロール ・ タブ移動（Shiftなし）
+    if (!shift && NAV_ACTIONS[key]) {
         event.preventDefault();
         NAV_ACTIONS[key]();
     }
@@ -533,7 +539,7 @@ window.addEventListener('keydown', (event: KeyboardEvent): void => {
 
     if (!isWalkerMode || isInputActive()) return;
 
-    const key = event.key.toLowerCase();
+    const key = normalizeKey(event); // 修飾キー非依存の正規化
 
     if (WALKER_KEYS.has(key)) {
         event.stopPropagation();

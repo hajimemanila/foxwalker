@@ -15,7 +15,7 @@
         "message": "ナビゲーション"
     },
     "cs_section_tab": {
-        "message": "タブ操作（ダブルタップ）"
+        "message": "タブ操作（Shift + キー）"
     },
     "cs_section_sys": {
         "message": "システム"

@@ -3,19 +3,18 @@
   // src/kernel.ts
   var STORAGE_KEY = "isWalkerMode";
   var SCROLL_AMOUNT = 380;
-  var DOUBLE_TAP_DELAY = 250;
   var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " ", "q", "e", "v", "c"]);
-  var DOUBLE_ACTIONS = {
-    "g": "DISCARD_TAB",
+  var SHIFT_ACTIONS = {
     "x": "CLOSE_TAB",
     "z": "UNDO_CLOSE",
+    "r": "RELOAD_TAB",
+    "m": "MUTE_TAB",
+    "g": "DISCARD_TAB",
     "0": "CLEAN_UP",
     "9": "GO_FIRST_TAB",
-    "m": "MUTE_TAB",
-    "r": "RELOAD_TAB",
     "c": "DUPLICATE_TAB"
   };
-  var DOUBLE_LOCAL_ACTIONS = {
+  var SHIFT_LOCAL_ACTIONS = {
     "w": () => window.scrollTo({ top: 0, behavior: "smooth" }),
     "v": () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
   };
@@ -42,8 +41,6 @@
     }
   }
   var isWalkerMode = false;
-  var lastKey = null;
-  var lastKeyTime = 0;
   function t(key) {
     const msg = browser.i18n.getMessage(key);
     return msg || key;
@@ -290,15 +287,15 @@
     addRow(["W", "S"], "cs_nav_ws");
     addRow(["Q", "E"], "cs_nav_qe");
     addSection("cs_section_tab");
-    addRow(["X", "X"], "cs_tab_xx");
-    addRow(["Z", "Z"], "cs_tab_zz");
-    addRow(["R", "R"], "cs_tab_rr");
-    addRow(["M", "M"], "cs_tab_mm");
-    addRow(["G", "G"], "cs_tab_gg");
-    addRow(["0", "0"], "cs_tab_00");
-    addRow(["W", "W"], "cs_tab_ww");
-    addRow(["V", "V"], "cs_tab_vv");
-    addRow(["C", "C"], "cs_tab_cc");
+    addRow(["Shift", "X"], "cs_tab_xx");
+    addRow(["Shift", "Z"], "cs_tab_zz");
+    addRow(["Shift", "R"], "cs_tab_rr");
+    addRow(["Shift", "M"], "cs_tab_mm");
+    addRow(["Shift", "G"], "cs_tab_gg");
+    addRow(["Shift", "0"], "cs_tab_00");
+    addRow(["Shift", "W"], "cs_tab_ww");
+    addRow(["Shift", "V"], "cs_tab_vv");
+    addRow(["Shift", "C"], "cs_tab_cc");
     addSection("cs_section_sys");
     addRow(["Esc"], "cs_sys_esc");
     addRow(["F"], "cs_sys_f");
@@ -376,25 +373,26 @@
     }
     window.focus();
   });
+  function normalizeKey(event) {
+    const code = event.code;
+    if (code.startsWith("Key")) return code.slice(3).toLowerCase();
+    if (code.startsWith("Digit")) return code.slice(5);
+    if (code === "Space") return " ";
+    return event.key.toLowerCase();
+  }
   function handleKeyInput(event) {
-    const key = event.key.toLowerCase();
+    const key = normalizeKey(event);
     const shift = event.shiftKey;
-    const currentTime = Date.now();
-    const isDoubleTap = key === lastKey && currentTime - lastKeyTime < DOUBLE_TAP_DELAY;
-    if (!isDoubleTap) {
-      lastKey = key;
-      lastKeyTime = currentTime;
-    } else {
-      lastKey = null;
-    }
-    if (isDoubleTap && DOUBLE_ACTIONS[key]) {
+    if (shift && SHIFT_ACTIONS[key]) {
       event.preventDefault();
-      browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
+      event.stopPropagation();
+      browser.runtime.sendMessage({ command: SHIFT_ACTIONS[key] });
       return;
     }
-    if (isDoubleTap && DOUBLE_LOCAL_ACTIONS[key]) {
+    if (shift && SHIFT_LOCAL_ACTIONS[key]) {
       event.preventDefault();
-      DOUBLE_LOCAL_ACTIONS[key]();
+      event.stopPropagation();
+      SHIFT_LOCAL_ACTIONS[key]();
       return;
     }
     if (key === "f") {
@@ -417,13 +415,13 @@
       window.history.forward();
       return;
     }
-    if (key === "z" && !isDoubleTap) {
+    if (key === "z" && !shift) {
       event.preventDefault();
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       window.focus();
       return;
     }
-    if (NAV_ACTIONS[key]) {
+    if (!shift && NAV_ACTIONS[key]) {
       event.preventDefault();
       NAV_ACTIONS[key]();
     }
@@ -444,7 +442,7 @@
       return;
     }
     if (!isWalkerMode || isInputActive()) return;
-    const key = event.key.toLowerCase();
+    const key = normalizeKey(event);
     if (WALKER_KEYS.has(key)) {
       event.stopPropagation();
       event.stopImmediatePropagation();
