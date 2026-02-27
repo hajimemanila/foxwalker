@@ -3,7 +3,7 @@
   // src/kernel.ts
   var STORAGE_KEY = "isWalkerMode";
   var SCROLL_AMOUNT = 380;
-  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " ", "q", "e", "v", "c"]);
+  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " ", "q", "e", "c"]);
   var SHIFT_ACTIONS = {
     "x": "CLOSE_TAB",
     "z": "UNDO_CLOSE",
@@ -16,7 +16,7 @@
   };
   var SHIFT_LOCAL_ACTIONS = {
     "w": () => window.scrollTo({ top: 0, behavior: "smooth" }),
-    "v": () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    "s": () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
   };
   var NAV_ACTIONS = {
     "w": () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: "smooth" }),
@@ -294,7 +294,7 @@
     addRow(["Shift", "G"], "cs_tab_gg");
     addRow(["Shift", "0"], "cs_tab_00");
     addRow(["Shift", "W"], "cs_tab_ww");
-    addRow(["Shift", "V"], "cs_tab_vv");
+    addRow(["Shift", "S"], "cs_tab_ss");
     addRow(["Shift", "C"], "cs_tab_cc");
     addSection("cs_section_sys");
     addRow(["Esc"], "cs_sys_esc");

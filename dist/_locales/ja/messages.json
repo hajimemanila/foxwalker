@@ -53,8 +53,8 @@
     "cs_tab_ww": {
         "message": "ページ最上部へ"
     },
-    "cs_tab_vv": {
-        "message": "ページ最下部へ"
+    "cs_tab_ss": {
+        "message": "ページ最下部へスクロール"
     },
     "cs_tab_cc": {
         "message": "タブを複製"

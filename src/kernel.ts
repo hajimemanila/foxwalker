@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'isWalkerMode';
 const SCROLL_AMOUNT = 380;
 
-const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ', 'q', 'e', 'v', 'c']);
+const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ', 'q', 'e', 'c']);
 
 // Shift+キー: background 送信アクション（旧: ダブルタップ）
 const SHIFT_ACTIONS: Record<string, string> = {
@@ -10,10 +10,10 @@ const SHIFT_ACTIONS: Record<string, string> = {
     '9': 'GO_FIRST_TAB', 'c': 'DUPLICATE_TAB',
 };
 
-// Shift+W / Shift+V: ローカルスクロール（送信不要）
+// Shift+W / Shift+S: ローカルスクロール（送信不要）
 const SHIFT_LOCAL_ACTIONS: Record<string, () => void> = {
     'w': () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-    'v': () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
+    's': () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
 };
 
 const NAV_ACTIONS: Record<string, () => void> = {
@@ -352,7 +352,7 @@ const cheatsheet: CheatsheetController = (() => {
     addRow(['Shift', 'G'], 'cs_tab_gg');
     addRow(['Shift', '0'], 'cs_tab_00');
     addRow(['Shift', 'W'], 'cs_tab_ww');
-    addRow(['Shift', 'V'], 'cs_tab_vv');
+    addRow(['Shift', 'S'], 'cs_tab_ss');
     addRow(['Shift', 'C'], 'cs_tab_cc');
 
     addSection('cs_section_sys');

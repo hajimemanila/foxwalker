@@ -30,7 +30,7 @@
 | **Shift + G** | Discard All Background Tabs (except Pinned) |
 | **Shift + 0** | Close All Other Tabs (except Active/Pinned) |
 | **Shift + W** | Scroll to Top (smooth) |
-| **Shift + V** | Scroll to Bottom (smooth) |
+| **Shift + S** | Scroll to Bottom (smooth) |
 | **Shift + C** | Duplicate Tab (preserves container & session) |
 
 ---
