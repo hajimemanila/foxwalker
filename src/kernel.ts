@@ -2,11 +2,18 @@ const STORAGE_KEY = 'isWalkerMode';
 const SCROLL_AMOUNT = 380;
 const DOUBLE_TAP_DELAY = 250;
 
-const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ']);
+const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ', 'q', 'e', 'v', 'c']);
 
 const DOUBLE_ACTIONS: Record<string, string> = {
     'g': 'DISCARD_TAB', 'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE',
     '0': 'CLEAN_UP', '9': 'GO_FIRST_TAB', 'm': 'MUTE_TAB', 'r': 'RELOAD_TAB',
+    'c': 'DUPLICATE_TAB',
+};
+
+// ww / vv: background 送信不要のローカルスクロールアクション
+const DOUBLE_LOCAL_ACTIONS: Record<string, () => void> = {
+    'w': () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    'v': () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
 };
 
 const NAV_ACTIONS: Record<string, () => void> = {
@@ -79,6 +86,7 @@ const hud: HudController = (() => {
     Object.assign(host.style, {
         all: 'initial', position: 'fixed', zIndex: '2147483647',
         pointerEvents: 'none', bottom: '24px', right: '24px',
+        display: 'none',  // 初期状態: レイアウトツリーから完全除外
     });
 
     const shadow = host.attachShadow({ mode: 'closed' });
@@ -147,8 +155,12 @@ const hud: HudController = (() => {
         pulseTimer = setTimeout(() => hudEl.classList.remove('pulse'), 600);
     }
 
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
     function setState(active: boolean): void {
+        if (hideTimer !== null) { clearTimeout(hideTimer); hideTimer = null; }
         if (active) {
+            host.style.display = 'block';   // レイアウトツリーに復帰してからアニメ
             hudEl.classList.add('visible');
             statusEl.className = 'status on';
             statusEl.textContent = t('hud_on');
@@ -157,6 +169,8 @@ const hud: HudController = (() => {
             hudEl.classList.remove('visible');
             statusEl.className = 'status off';
             statusEl.textContent = t('hud_off');
+            // フェードアウト完了待機後にレイアウトツリーから完全除外
+            hideTimer = setTimeout(() => { host.style.display = 'none'; }, 250);
         }
     }
 
@@ -187,8 +201,7 @@ const cheatsheet: CheatsheetController = (() => {
         position: 'fixed',
         inset: '0',
         zIndex: '2147483646',
-        pointerEvents: 'none',
-        display: 'flex',
+        display: 'none',          // 初期状態: DOMに存在するがレイアウトツリー外
         alignItems: 'center',
         justifyContent: 'center',
     });
@@ -305,6 +318,7 @@ const cheatsheet: CheatsheetController = (() => {
     addRow(['A', 'D'], 'cs_nav_ad');
     addRow(['Space'], 'cs_nav_space');
     addRow(['W', 'S'], 'cs_nav_ws');
+    addRow(['Q', 'E'], 'cs_nav_qe');
 
     addSection('cs_section_tab');
     addRow(['X', 'X'], 'cs_tab_xx');
@@ -313,10 +327,14 @@ const cheatsheet: CheatsheetController = (() => {
     addRow(['M', 'M'], 'cs_tab_mm');
     addRow(['G', 'G'], 'cs_tab_gg');
     addRow(['0', '0'], 'cs_tab_00');
+    addRow(['W', 'W'], 'cs_tab_ww');
+    addRow(['V', 'V'], 'cs_tab_vv');
+    addRow(['C', 'C'], 'cs_tab_cc');
 
     addSection('cs_section_sys');
     addRow(['Esc'], 'cs_sys_esc');
     addRow(['F'], 'cs_sys_f');
+    addRow(['Z'], 'cs_sys_z');
 
     panel.appendChild(table);
 
@@ -340,16 +358,20 @@ const cheatsheet: CheatsheetController = (() => {
         }
     }
 
+    let csHideTimer: ReturnType<typeof setTimeout> | null = null;
+
     function show(): void {
+        if (csHideTimer !== null) { clearTimeout(csHideTimer); csHideTimer = null; }
         visible = true;
-        overlay.style.pointerEvents = 'auto';
-        panel.classList.add('visible');
+        host.style.display = 'flex';  // ファーストにレイアウトツリーに復帰
+        requestAnimationFrame(() => panel.classList.add('visible'));
     }
 
     function hide(): void {
         visible = false;
-        overlay.style.pointerEvents = 'none';
         panel.classList.remove('visible');
+        // パネルのフェードアウト後に host をレイアウトツリーから完全除外
+        csHideTimer = setTimeout(() => { if (!visible) host.style.display = 'none'; }, 240);
     }
 
     function toggle(): void { visible ? hide() : show(); }
@@ -385,9 +407,17 @@ function handleKeyInput(event: KeyboardEvent): void {
         lastKey = null;
     }
 
+    // ダブルタップ: background 送信アクション (zz→UNDO_CLOSE, cc→DUPLICATE_TAB など)
     if (isDoubleTap && DOUBLE_ACTIONS[key]) {
         event.preventDefault();
         browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
+        return;
+    }
+
+    // ダブルタップ: ローカルスクロール (ww→最上部, vv→最下部)
+    if (isDoubleTap && DOUBLE_LOCAL_ACTIONS[key]) {
+        event.preventDefault();
+        DOUBLE_LOCAL_ACTIONS[key]();
         return;
     }
 
@@ -400,6 +430,18 @@ function handleKeyInput(event: KeyboardEvent): void {
     if (key === ' ') {
         event.preventDefault();
         browser.runtime.sendMessage({ command: shift ? 'PREV_TAB' : 'NEXT_TAB' });
+        return;
+    }
+
+    // シングルプレス: Q (履歴戻る), E (履歴進む)
+    if (key === 'q') { event.preventDefault(); window.history.back(); return; }
+    if (key === 'e') { event.preventDefault(); window.history.forward(); return; }
+
+    // シングルプレス: Z (DOMリセット) — zz→UNDO_CLOSE は上の DOUBLE_ACTIONS で先処理済み
+    if (key === 'z' && !isDoubleTap) {
+        event.preventDefault();
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        window.focus();
         return;
     }
 

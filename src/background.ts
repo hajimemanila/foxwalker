@@ -53,6 +53,7 @@ type FoxWalkerCommand =
     | 'MUTE_TAB'
     | 'DISCARD_TAB'
     | 'GO_FIRST_TAB'
+    | 'DUPLICATE_TAB'
     | 'CLEAN_UP';
 
 interface FoxWalkerMessage {
@@ -123,6 +124,12 @@ browser.runtime.onMessage.addListener((message: FoxWalkerMessage, sender) => {
                     if (allTabs[0]?.id !== undefined) {
                         await browser.tabs.update(allTabs[0].id!, { active: true });
                     }
+                    break;
+                }
+
+                case 'DUPLICATE_TAB': {
+                    // CC: タブを複製（コンテナ・セッション・ログイン状態を完全継承）
+                    if (tabId !== undefined) await browser.tabs.duplicate(tabId);
                     break;
                 }
 

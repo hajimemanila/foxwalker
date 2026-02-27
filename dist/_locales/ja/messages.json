@@ -29,6 +29,9 @@
     "cs_nav_ws": {
         "message": "ページを上 / 下スクロール"
     },
+    "cs_nav_qe": {
+        "message": "履歴を戻る / 進む"
+    },
     "cs_tab_xx": {
         "message": "タブを閉じる"
     },
@@ -47,11 +50,23 @@
     "cs_tab_00": {
         "message": "アクティブ以外を全て閉じる"
     },
+    "cs_tab_ww": {
+        "message": "ページ最上部へ"
+    },
+    "cs_tab_vv": {
+        "message": "ページ最下部へ"
+    },
+    "cs_tab_cc": {
+        "message": "タブを複製"
+    },
     "cs_sys_esc": {
         "message": "Walker Mode 切替"
     },
     "cs_sys_f": {
         "message": "チートシートを開閉"
+    },
+    "cs_sys_z": {
+        "message": "DOMリセット（フォーカス解除）"
     },
     "cs_footer": {
         "message": "F または Esc で閉じる"

@@ -4,7 +4,7 @@
   var STORAGE_KEY = "isWalkerMode";
   var SCROLL_AMOUNT = 380;
   var DOUBLE_TAP_DELAY = 250;
-  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " "]);
+  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " ", "q", "e", "v", "c"]);
   var DOUBLE_ACTIONS = {
     "g": "DISCARD_TAB",
     "x": "CLOSE_TAB",
@@ -12,7 +12,12 @@
     "0": "CLEAN_UP",
     "9": "GO_FIRST_TAB",
     "m": "MUTE_TAB",
-    "r": "RELOAD_TAB"
+    "r": "RELOAD_TAB",
+    "c": "DUPLICATE_TAB"
+  };
+  var DOUBLE_LOCAL_ACTIONS = {
+    "w": () => window.scrollTo({ top: 0, behavior: "smooth" }),
+    "v": () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
   };
   var NAV_ACTIONS = {
     "w": () => window.scrollBy({ top: -SCROLL_AMOUNT, behavior: "smooth" }),
@@ -60,7 +65,9 @@
       zIndex: "2147483647",
       pointerEvents: "none",
       bottom: "24px",
-      right: "24px"
+      right: "24px",
+      display: "none"
+      // 初期状態: レイアウトツリーから完全除外
     });
     const shadow = host.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
@@ -119,8 +126,14 @@
       if (pulseTimer !== null) clearTimeout(pulseTimer);
       pulseTimer = setTimeout(() => hudEl.classList.remove("pulse"), 600);
     }
+    let hideTimer = null;
     function setState(active) {
+      if (hideTimer !== null) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
       if (active) {
+        host.style.display = "block";
         hudEl.classList.add("visible");
         statusEl.className = "status on";
         statusEl.textContent = t("hud_on");
@@ -129,6 +142,9 @@
         hudEl.classList.remove("visible");
         statusEl.className = "status off";
         statusEl.textContent = t("hud_off");
+        hideTimer = setTimeout(() => {
+          host.style.display = "none";
+        }, 250);
       }
     }
     function mount() {
@@ -149,8 +165,8 @@
       position: "fixed",
       inset: "0",
       zIndex: "2147483646",
-      pointerEvents: "none",
-      display: "flex",
+      display: "none",
+      // 初期状態: DOMに存在するがレイアウトツリー外
       alignItems: "center",
       justifyContent: "center"
     });
@@ -256,6 +272,7 @@
     addRow(["A", "D"], "cs_nav_ad");
     addRow(["Space"], "cs_nav_space");
     addRow(["W", "S"], "cs_nav_ws");
+    addRow(["Q", "E"], "cs_nav_qe");
     addSection("cs_section_tab");
     addRow(["X", "X"], "cs_tab_xx");
     addRow(["Z", "Z"], "cs_tab_zz");
@@ -263,9 +280,13 @@
     addRow(["M", "M"], "cs_tab_mm");
     addRow(["G", "G"], "cs_tab_gg");
     addRow(["0", "0"], "cs_tab_00");
+    addRow(["W", "W"], "cs_tab_ww");
+    addRow(["V", "V"], "cs_tab_vv");
+    addRow(["C", "C"], "cs_tab_cc");
     addSection("cs_section_sys");
     addRow(["Esc"], "cs_sys_esc");
     addRow(["F"], "cs_sys_f");
+    addRow(["Z"], "cs_sys_z");
     panel.appendChild(table);
     const footer = document.createElement("div");
     footer.id = "footer";
@@ -282,15 +303,22 @@
         document.addEventListener("DOMContentLoaded", () => document.body.appendChild(host), { once: true });
       }
     }
+    let csHideTimer = null;
     function show() {
+      if (csHideTimer !== null) {
+        clearTimeout(csHideTimer);
+        csHideTimer = null;
+      }
       visible = true;
-      overlay.style.pointerEvents = "auto";
-      panel.classList.add("visible");
+      host.style.display = "flex";
+      requestAnimationFrame(() => panel.classList.add("visible"));
     }
     function hide() {
       visible = false;
-      overlay.style.pointerEvents = "none";
       panel.classList.remove("visible");
+      csHideTimer = setTimeout(() => {
+        if (!visible) host.style.display = "none";
+      }, 240);
     }
     function toggle() {
       visible ? hide() : show();
@@ -326,6 +354,11 @@
       browser.runtime.sendMessage({ command: DOUBLE_ACTIONS[key] });
       return;
     }
+    if (isDoubleTap && DOUBLE_LOCAL_ACTIONS[key]) {
+      event.preventDefault();
+      DOUBLE_LOCAL_ACTIONS[key]();
+      return;
+    }
     if (key === "f") {
       event.preventDefault();
       cheatsheet.toggle();
@@ -334,6 +367,22 @@
     if (key === " ") {
       event.preventDefault();
       browser.runtime.sendMessage({ command: shift ? "PREV_TAB" : "NEXT_TAB" });
+      return;
+    }
+    if (key === "q") {
+      event.preventDefault();
+      window.history.back();
+      return;
+    }
+    if (key === "e") {
+      event.preventDefault();
+      window.history.forward();
+      return;
+    }
+    if (key === "z" && !isDoubleTap) {
+      event.preventDefault();
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      window.focus();
       return;
     }
     if (NAV_ACTIONS[key]) {

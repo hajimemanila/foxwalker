@@ -29,6 +29,9 @@
     "cs_nav_ws": {
         "message": "Scroll Up / Down"
     },
+    "cs_nav_qe": {
+        "message": "History Back / Forward"
+    },
     "cs_tab_xx": {
         "message": "Close Tab"
     },
@@ -47,11 +50,23 @@
     "cs_tab_00": {
         "message": "Close All Other Tabs"
     },
+    "cs_tab_ww": {
+        "message": "Scroll to Top"
+    },
+    "cs_tab_vv": {
+        "message": "Scroll to Bottom"
+    },
+    "cs_tab_cc": {
+        "message": "Duplicate Tab"
+    },
     "cs_sys_esc": {
         "message": "Toggle Walker Mode"
     },
     "cs_sys_f": {
         "message": "Toggle Cheatsheet"
+    },
+    "cs_sys_z": {
+        "message": "DOM Reset (blur focus)"
     },
     "cs_footer": {
         "message": "Press F or Esc to close"

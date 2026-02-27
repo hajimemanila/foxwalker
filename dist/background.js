@@ -72,6 +72,10 @@
             }
             break;
           }
+          case "DUPLICATE_TAB": {
+            if (tabId !== void 0) await browser.tabs.duplicate(tabId);
+            break;
+          }
           case "CLEAN_UP": {
             const tabsToKill = await browser.tabs.query({
               currentWindow: true,
