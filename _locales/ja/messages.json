@@ -32,6 +32,9 @@
     "cs_nav_qe": {
         "message": "履歴を戻る / 進む"
     },
+    "cs_tab_tt": {
+        "message": "他のタブを全て閉じる"
+    },
     "cs_tab_xx": {
         "message": "タブを閉じる"
     },

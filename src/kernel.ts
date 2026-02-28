@@ -1,12 +1,12 @@
 const STORAGE_KEY = 'isWalkerMode';
 const SCROLL_AMOUNT = 380;
 
-const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', '0', '9', ' ', 'q', 'e', 'c']);
+const WALKER_KEYS = new Set(['a', 'd', 's', 'w', 'f', 'x', 'z', 'r', 'm', 'g', 't', '9', ' ', 'q', 'e', 'c']);
 
 // Shift+キー: background 送信アクション（旧: ダブルタップ）
 const SHIFT_ACTIONS: Record<string, string> = {
     'x': 'CLOSE_TAB', 'z': 'UNDO_CLOSE', 'r': 'RELOAD_TAB',
-    'm': 'MUTE_TAB', 'g': 'DISCARD_TAB', '0': 'CLEAN_UP',
+    'm': 'MUTE_TAB', 'g': 'DISCARD_TAB', 't': 'CLEAN_UP',
     '9': 'GO_FIRST_TAB', 'c': 'DUPLICATE_TAB',
 };
 
@@ -350,7 +350,7 @@ const cheatsheet: CheatsheetController = (() => {
     addRow(['Shift', 'R'], 'cs_tab_rr');
     addRow(['Shift', 'M'], 'cs_tab_mm');
     addRow(['Shift', 'G'], 'cs_tab_gg');
-    addRow(['Shift', '0'], 'cs_tab_00');
+    addRow(['Shift', 'T'], 'cs_tab_tt');
     addRow(['Shift', 'W'], 'cs_tab_ww');
     addRow(['Shift', 'S'], 'cs_tab_ss');
     addRow(['Shift', 'C'], 'cs_tab_cc');

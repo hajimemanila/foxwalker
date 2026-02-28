@@ -3,14 +3,14 @@
   // src/kernel.ts
   var STORAGE_KEY = "isWalkerMode";
   var SCROLL_AMOUNT = 380;
-  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "0", "9", " ", "q", "e", "c"]);
+  var WALKER_KEYS = /* @__PURE__ */ new Set(["a", "d", "s", "w", "f", "x", "z", "r", "m", "g", "t", "9", " ", "q", "e", "c"]);
   var SHIFT_ACTIONS = {
     "x": "CLOSE_TAB",
     "z": "UNDO_CLOSE",
     "r": "RELOAD_TAB",
     "m": "MUTE_TAB",
     "g": "DISCARD_TAB",
-    "0": "CLEAN_UP",
+    "t": "CLEAN_UP",
     "9": "GO_FIRST_TAB",
     "c": "DUPLICATE_TAB"
   };
@@ -292,7 +292,7 @@
     addRow(["Shift", "R"], "cs_tab_rr");
     addRow(["Shift", "M"], "cs_tab_mm");
     addRow(["Shift", "G"], "cs_tab_gg");
-    addRow(["Shift", "0"], "cs_tab_00");
+    addRow(["Shift", "T"], "cs_tab_tt");
     addRow(["Shift", "W"], "cs_tab_ww");
     addRow(["Shift", "S"], "cs_tab_ss");
     addRow(["Shift", "C"], "cs_tab_cc");
